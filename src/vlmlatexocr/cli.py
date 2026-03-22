@@ -3,7 +3,7 @@ from pathlib import Path
 import click
 
 from vlmlatexocr.service import start_sevice
-from vlmlatexocr.train import (
+from vlmlatexocr.model import (
     run_lora,
     run_all_weights_sft,
     run_test,
@@ -12,6 +12,13 @@ from vlmlatexocr.train import (
 
 
 @click.command()
+@click.option(
+    "--model-config",
+    default=Path("./configs/model.json"),
+    help="Path to JSON with model parameters",
+    show_default=True,
+    type=click.Path(exists=True),
+)
 @click.option(
     "--lora-config",
     default=Path("./configs/lora.json"),
@@ -33,12 +40,19 @@ from vlmlatexocr.train import (
     show_default=True,
     type=click.Path(exists=True),
 )
-def lora(lora_config: str, trainer_config: str, logging_config:str):
+def lora(
+    model_config: str,
+    lora_config: str,
+    trainer_config: str,
+    logging_config:str
+):
     """Run SFT with LoRA.\f
 
     
     Parameters
     ----------
+    model_config : str
+        Path to JSON with model parameters.
     lora_config : str
         Path to JSON with LoRA parameters.
     trainer_config : str
@@ -46,10 +60,17 @@ def lora(lora_config: str, trainer_config: str, logging_config:str):
     logging_config : str
         Path to JSON with logging parameters.
     """
-    run_lora(lora_config, trainer_config, logging_config)
+    run_lora(model_config, lora_config, trainer_config, logging_config)
 
 
 @click.command()
+@click.option(
+    "--model-config",
+    default=Path("./configs/model.json"),
+    help="Path to JSON with model parameters",
+    show_default=True,
+    type=click.Path(exists=True),
+)
 @click.option(
     "--trainer-config",
     default=Path("./configs/trainer.json"),
@@ -64,17 +85,19 @@ def lora(lora_config: str, trainer_config: str, logging_config:str):
     show_default=True,
     type=click.Path(exists=True),
 )
-def fine_tune_weights(trainer_config: str, logging_config:str):
-    """Run SFT SFT with optimization of all weights.\f
+def fine_tune_weights(model_config: str, trainer_config: str, logging_config:str):
+    """Run SFT with optimization of all weights.\f
 
     Parameters
     ----------
+    model_config : str
+        Path to JSON with model parameters
     trainer_config : str
         Path to JSON with Trainer parameters
     logging_config : str
         Path to JSON with logging parameters
     """
-    run_all_weights_sft(trainer_config, logging_config)
+    run_all_weights_sft(model_config, trainer_config, logging_config)
 
 
 @click.command()
@@ -88,23 +111,32 @@ def test():
     type=click.Path(exists=True),
 )
 @click.option(
-    "--config",
+    "--model-config",
+    default=Path("./configs/model.json"),
+    help="Path to JSON with model parameters",
+    show_default=True,
+    type=click.Path(exists=True),
+)
+@click.option(
+    "--prediction-config",
     default=Path("./configs/predict.json"),
     help="Path to JSON with predictoin parameters",
     show_default=True,
     type=click.Path(exists=True),
 )
-def predict(image_path: str, config: str):
+def predict(image_path: str, model_config: str, prediction_config: str):
     """Predict LaTeX for the image image_path.\f
 
     Parameters
     ----------
+    model_config : str
+        Path to JSON with model parameters
     image_path : str
         Path to the image to be recognized.
-    config : str
+    prediction_config : str
         Path to JSON with predictoin parameters.
     """
-    run_predict(image_path, config)
+    run_predict(image_path, model_config, prediction_config)
 
 
 @click.command()
