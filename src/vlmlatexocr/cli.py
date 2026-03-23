@@ -169,7 +169,7 @@ def run_service():
 
 @click.group()
 def cli():
-    """Run CLI."""
+    """Run VLMLaTeXOCR CLI."""
     pass
 
 

@@ -66,6 +66,7 @@ def test_zero_shot_inference(
             return_tensors="pt"
         )
         prompt_len = inputs["input_ids"].shape[1]
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
         with torch.no_grad():
             output_ids = model.generate(
