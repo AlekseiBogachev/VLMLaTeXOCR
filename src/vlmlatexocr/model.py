@@ -236,23 +236,27 @@ def test_one_shot_inference(
 
 
 def run_lora(
+    dataset_name: str,
     model_config: str,
     lora_config: str,
     trainer_config: str,
-    logging_config: str,
+    random_state: int = 42,
 ):
     """Run SFT with LoRA.
 
     Parameters
     ----------
+    dataset_name : str
+        The name of the dataset to use for SFT.
     model_config : str
         Path to JSON with model parameters.
     lora_config : str
         Path to JSON with LoRA parameters.
     trainer_config : str
         Path to SON with Trainer parameters.
-    logging_config : str
-        Path to JSON with logging parameters.
+    random_state : int, optional
+        The random seed for shuffling the dataset and selecting the reference
+        example, by default 42.
     """
     model_params = read_config(model_config)
     lora_params = read_config(lora_config)
@@ -274,8 +278,9 @@ def run_lora(
     model.print_trainable_parameters()
 
     dataset = get_dataset(
-        model_params["dataset_name"],
+        dataset_name,
         model_params["datasets_cache_dir"],
+        random_state,
     )
 
     train_data = dataset["train"]

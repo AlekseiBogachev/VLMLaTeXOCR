@@ -14,6 +14,10 @@ from vlmlatexocr.service import start_sevice
 
 
 @click.command()
+@click.argument(
+    "dataset-name",
+    type=str,
+)
 @click.option(
     "--model-config",
     default=Path("./configs/model.json"),
@@ -36,22 +40,26 @@ from vlmlatexocr.service import start_sevice
     type=click.Path(exists=True),
 )
 @click.option(
-    "--logging-config",
-    default=Path("./configs/logging.json"),
-    help="Path to JSON with logging parameters",
+    "--random-state",
+    default=42,
+    help="Random state for shuffling the dataset",
     show_default=True,
-    type=click.Path(exists=True),
+    type=int,
 )
 def lora(
+    dataset_name: str,
     model_config: str,
     lora_config: str,
     trainer_config: str,
-    logging_config: str,
+    random_state: int = 42,
 ):
     """Run SFT with LoRA.\f
 
     Parameters
     ----------
+    dataset_name : str
+        Dataset name. Allowed values are 'latex_ocr', 'mathwriting',
+        or 'mixed'.
     model_config : str
         Path to JSON with model parameters.
     lora_config : str
@@ -61,7 +69,13 @@ def lora(
     logging_config : str
         Path to JSON with logging parameters.
     """
-    run_lora(model_config, lora_config, trainer_config, logging_config)
+    run_lora(
+        dataset_name,
+        model_config,
+        lora_config,
+        trainer_config,
+        random_state,
+    )
 
 
 @click.command()
