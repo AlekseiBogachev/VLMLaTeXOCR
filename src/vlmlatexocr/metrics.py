@@ -2,9 +2,9 @@ import re
 
 import evaluate
 
-
 wer_metric = evaluate.load("wer")
-cer_metric = evaluate.load("cer") 
+cer_metric = evaluate.load("cer")
+
 
 def calculate_wer_cer(true: list[str], pred: list[str]) -> dict:
     """Calculate Word Error Rate (WER) and Character Error Rate (CER).
@@ -24,7 +24,7 @@ def calculate_wer_cer(true: list[str], pred: list[str]) -> dict:
     """
     wer_score = wer_metric.compute(predictions=pred, references=true)
     cer_score = cer_metric.compute(predictions=pred, references=true)
-    
+
     return {"wer": wer_score, "cer": cer_score}
 
 
@@ -51,7 +51,7 @@ def normalize_latex(text: str) -> str:
     text = re.sub(r"([\{\}\^_=\+\-\(\)\[\]])", r" \1 ", text)
     text = re.sub(r"(\\[a-zA-Z]+)", r"\1 ", text)
     text = re.sub(r"\s+", " ", text).strip()
-    
+
     return text
 
 

@@ -1,9 +1,8 @@
+from pathlib import Path
 from typing import Any
 
-from pathlib import Path
-
-from datasets import Dataset, Datasetdict, concatenate_datasets, load_dataset
 import torch
+from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 
 
 def get_latex_ocr(cache_dir: Path) -> Dataset:
@@ -82,7 +81,7 @@ def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
     """
     latex_ocr = get_latex_ocr(cache_dir)
     mathwriting = get_mathwriting(cache_dir)
-    mathwriting = Datasetdict(
+    mathwriting = DatasetDict(
         {
             "train": mathwriting["train"],
             "validation": mathwriting["val"],
@@ -90,7 +89,7 @@ def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
         }
     )
 
-    return Datasetdict(
+    return DatasetDict(
         {
             key: concatenate_datasets(
                 [latex_ocr[key], mathwriting[key]]
@@ -101,10 +100,8 @@ def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
 
 
 def get_dataset(
-        dataset_name: str,
-        cache_dir: Path,
-        random_state: int = 42
-    ) -> Dataset:
+    dataset_name: str, cache_dir: Path, random_state: int = 42
+) -> Dataset:
     """Check dataset_name and return loaded dataset.
 
     Parameters
@@ -132,9 +129,7 @@ def get_dataset(
     elif dataset_name == "mathwriting":
         dataset = get_mathwriting(cache_dir)
     elif dataset_name == "mixed":
-        dataset = get_mixed_dataset(
-            cache_dir, random_state
-        )
+        dataset = get_mixed_dataset(cache_dir, random_state)
     else:
         raise ValueError(
             "Dataset must be one of 'latex_ocr', 'mathwriting', or 'mixed'."
@@ -146,25 +141,33 @@ def get_dataset(
 class VLMDataCollator:
     def __init__(self, processor, system_prompt: str):
         self.processor = processor
-        self.system_prompt = (system_prompt)
+        self.system_prompt = system_prompt
 
-    def __call__(self, samples: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
+    def __call__(
+        self, samples: list[dict[str, Any]]
+    ) -> dict[str, torch.Tensor]:
         texts = []
         images = []
-        
+
         for sample in samples:
             message_template = [
-                {"role": "system",
-                 "content": [{"type": "text", "text": self.system_prompt}]
+                {
+                    "role": "system",
+                    "content": [{"type": "text", "text": self.system_prompt}],
                 },
-                {"role": "user",
-                 "content": [
-                     {"type": "image"},
-                     {"type": "text", "text": "Convert this image to LaTeX:"}
-                 ]
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image"},
+                        {
+                            "type": "text",
+                            "text": "Convert this image to LaTeX:",
+                        },
+                    ],
                 },
-                {"role": "assistant",
-                 "content": [{"type": "text", "text": sample["text"]}]
+                {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": sample["text"]}],
                 },
             ]
 
@@ -175,17 +178,14 @@ class VLMDataCollator:
             images.append(sample["image"])
 
         batch = self.processor(
-            text=texts,
-            images=images,
-            padding=True,
-            return_tensors="pt"
+            text=texts, images=images, padding=True, return_tensors="pt"
         )
 
         labels = batch["input_ids"].clone()
         labels[labels == self.processor.tokenizer.pad_token_id] = -100
         # нужно будет заменить на -100 оставшиеся токены, неотносящиеся
         # к ответу модели в LaTeX.
-        
+
         batch["labels"] = labels
 
         return batch

@@ -1,18 +1,17 @@
-from typing import Any
 
+import torch
 from peft import LoraConfig, get_peft_model
 from tqdm import tqdm
-import torch
 from transformers import (
-    AutoProcessor,
     AutoModelForImageTextToText,
+    AutoProcessor,
+    Trainer,
     TrainingArguments,
-    Trainer
 )
 
+from vlmlatexocr.data import VLMDataCollator, get_dataset
 from vlmlatexocr.metrics import calculate_metrics
 from vlmlatexocr.utils import read_config
-from vlmlatexocr.data import get_dataset, VLMDataCollator
 
 
 def test_zero_shot_inference(
@@ -76,7 +75,7 @@ def test_zero_shot_inference(
                 "content": [
                     {"type": "image"},
                     {"type": "text", "text": model_params["prompt_text"]},
-                ]
+                ],
             }
         ]
 
@@ -90,24 +89,24 @@ def test_zero_shot_inference(
             text=[text_prompt],
             images=[image],
             padding=True,
-            return_tensors="pt"
+            return_tensors="pt",
         )
         prompt_len = inputs["input_ids"].shape[1]
         inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
         with torch.no_grad():
             output_ids = model.generate(
-                **inputs, 
+                **inputs,
                 max_new_tokens=model_params["max_new_tokens"],
             )
 
         generated_tokens = output_ids[:, prompt_len:]
-        
+
         pred_values.append(
             processor.batch_decode(
                 generated_tokens,
                 skip_special_tokens=True,
-                clean_up_tokenization_spaces=False
+                clean_up_tokenization_spaces=False,
             )[0]
         )
 
@@ -116,7 +115,7 @@ def test_zero_shot_inference(
 
 def test_one_shot_inference(
     dataset_name: str,
-    model_config:str,
+    model_config: str,
     num_samples: int | None = None,
     random_state: int = 42,
 ) -> dict:
@@ -171,30 +170,34 @@ def test_one_shot_inference(
     true_values = list()
     pred_values = list()
 
-
-
     for sample in tqdm(dataset):
         true_values.append(sample["text"])
 
         message_template = [
-            {"role": "system",
-             "content": [{"type": "text", "text": model_params["prompt_text"]}]
+            {
+                "role": "system",
+                "content": [
+                    {"type": "text", "text": model_params["prompt_text"]}
+                ],
             },
-            {"role": "user",
-             "content": [
-                 {"type": "image"},
-                 {"type": "text", "text": "Convert this image to LaTeX:"}
-             ]
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": "Convert this image to LaTeX:"},
+                ],
             },
-            {"role": "assistant",
-             "content": [{"type": "text", "text": ref_example["text"]}]
+            {
+                "role": "assistant",
+                "content": [{"type": "text", "text": ref_example["text"]}],
             },
-            {"role": "user",
-             "content": [
-                 {"type": "image"},
-                 {"type": "text", "text": "Convert this image to LaTeX:"}
-             ]
-            }
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image"},
+                    {"type": "text", "text": "Convert this image to LaTeX:"},
+                ],
+            },
         ]
 
         text_prompt = processor.apply_chat_template(
@@ -205,9 +208,9 @@ def test_one_shot_inference(
 
         inputs = processor(
             text=[text_prompt],
-            images=[ref_example["image"], sample["image"]], 
+            images=[ref_example["image"], sample["image"]],
             padding=True,
-            return_tensors="pt"
+            return_tensors="pt",
         )
 
         prompt_len = inputs["input_ids"].shape[1]
@@ -215,17 +218,17 @@ def test_one_shot_inference(
 
         with torch.no_grad():
             output_ids = model.generate(
-                **inputs, 
+                **inputs,
                 max_new_tokens=model_params["max_new_tokens"],
             )
 
         generated_tokens = output_ids[:, prompt_len:]
-        
+
         pred_values.append(
             processor.batch_decode(
                 generated_tokens,
                 skip_special_tokens=True,
-                clean_up_tokenization_spaces=False
+                clean_up_tokenization_spaces=False,
             )[0]
         )
 
@@ -293,8 +296,8 @@ def run_lora(
 
     trainer.train()
 
-    trainer.save_model(f"{trainer_params["output_dir"]}/final")
-    processor.save_pretrained(f"{trainer_params["output_dir"]}/final")
+    trainer.save_model(f"{trainer_params['output_dir']}/final")
+    processor.save_pretrained(f"{trainer_params['output_dir']}/final")
 
     return None
 

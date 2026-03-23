@@ -7,8 +7,8 @@ from vlmlatexocr.model import (
     run_all_weights_sft,
     run_lora,
     run_predict,
-    test_zero_shot_inference,
     test_one_shot_inference,
+    test_zero_shot_inference,
 )
 from vlmlatexocr.service import start_sevice
 
@@ -129,12 +129,12 @@ def fine_tune_weights(
 )
 def test_zero_shot(
     dataset_name: str,
-    model_config:str,
+    model_config: str,
     num_samples: int | None = None,
     random_state: int = 42,
 ):
     """Test zero-shot inferens on dataset dataset_name with model_config.
-    
+
     Allowed values for dataset_name are 'latex_ocr', 'mathwriting', or
     'mixed'.\f
 
@@ -185,12 +185,12 @@ def test_zero_shot(
 )
 def test_one_shot(
     dataset_name: str,
-    model_config:str,
+    model_config: str,
     num_samples: int | None = None,
     random_state: int = 42,
 ):
     """Test one-shot inferens on dataset dataset_name with model_config.
-    
+
     Allowed values for dataset_name are 'latex_ocr', 'mathwriting', or
     'mixed'.\f
 
