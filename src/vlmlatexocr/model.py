@@ -156,7 +156,7 @@ def test_one_shot_inference(
 
     dataset = dataset["test"]
 
-    ref_example = dataset.shuffle(seed=random_state).select([0])
+    ref_example = dataset.shuffle(seed=random_state)[0]
     if num_samples is not None:
         dataset = dataset.shuffle(seed=random_state).select(range(num_samples))
 
