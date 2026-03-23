@@ -1,0 +1,11 @@
+{
+    "datasets_cache_dir": "/home/aleksei/Projects/VLMLaTeXOCR/data",
+    "max_new_tokens": 512,
+    "model_kwargs": {
+        "cache_dir": "/home/aleksei/Projects/VLMLaTeXOCR/models",
+        "device_map": "auto",
+        "dtype": "float16"
+    },
+    "model_name": "Qwen/Qwen3-VL-2B-Instruct",
+    "prompt_text": "You are an expert in mathematics and LaTeX. Extract the handwritten formula from the image and output it strictly as valid LaTeX code. Do not include any explanations or markdown formatting."
+}
