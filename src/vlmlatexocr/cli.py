@@ -103,7 +103,27 @@ def fine_tune_weights(
 
 
 @click.command()
+@click.argument(
+    "dataset-name",
+    type=str,
+)
+@click.option(
+    "--model-config",
+    default=Path("./configs/model.json"),
+    help="Path to JSON with model parameters",
+    show_default=True,
+    type=click.Path(exists=True),
+)
 def test_zero_shot(dataset_name: str, model_config:str):
+    """Test zero-shot inferens on dataset dataset_name with model_config.\f
+
+    Parameters
+    ----------
+    dataset_name : str
+        Dataset name. Allowed values are 'latex_ocr', 'mathwriting', or 'mixed'.
+    model_config : str
+        Path to JSON with model parameters.
+    """
     print(f"Test zero-shot inference on {dataset_name} dataset.")
     pprint(test_zero_shot_inference(dataset_name, model_config))
 
@@ -157,7 +177,7 @@ cli.add_command(lora)
 # cli.add_command(fine_tune_weights)
 cli.add_command(test_zero_shot)
 cli.add_command(predict)
-cli.add_command(run_service)
+# cli.add_command(run_service)
 
 
 if __name__ == "__main__":
