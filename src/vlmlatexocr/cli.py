@@ -8,6 +8,7 @@ from vlmlatexocr.model import (
     run_lora,
     run_predict,
     test_zero_shot_inference,
+    test_one_shot_inference,
 )
 from vlmlatexocr.service import start_sevice
 
@@ -132,7 +133,66 @@ def test_zero_shot(
     num_samples: int | None = None,
     random_state: int = 42,
 ):
-    """Test zero-shot inferens on dataset dataset_name with model_config.\f
+    """Test zero-shot inferens on dataset dataset_name with model_config.
+    
+    Allowed values for dataset_name are 'latex_ocr', 'mathwriting', or
+    'mixed'.\f
+
+    Parameters
+    ----------
+    dataset_name : str
+        Dataset name. Allowed values are 'latex_ocr', 'mathwriting',
+        or 'mixed'.
+    model_config : str
+        Path to JSON with model parameters.
+    num_samples : int | None
+        Number of samples to use for testing. If None, the entire
+        test set is used.
+    random_state : int, optional
+        Random state for shuffling the dataset, by default 42.
+    """
+    print(f"Test zero-shot inference on {dataset_name} dataset.")
+    pprint(
+        test_zero_shot_inference(
+            dataset_name, model_config, num_samples, random_state
+        )
+    )
+
+
+@click.command()
+@click.argument(
+    "dataset-name",
+    type=str,
+)
+@click.option(
+    "--model-config",
+    default=Path("./configs/model.json"),
+    help="Path to JSON with model parameters",
+    show_default=True,
+    type=click.Path(exists=True),
+)
+@click.option(
+    "--num-samples",
+    help="Number of samples to use for testing",
+    type=int,
+)
+@click.option(
+    "--random-state",
+    default=42,
+    help="Random state for shuffling the dataset",
+    show_default=True,
+    type=int,
+)
+def test_one_shot(
+    dataset_name: str,
+    model_config:str,
+    num_samples: int | None = None,
+    random_state: int = 42,
+):
+    """Test one-shot inferens on dataset dataset_name with model_config.
+    
+    Allowed values for dataset_name are 'latex_ocr', 'mathwriting', or
+    'mixed'.\f
 
     Parameters
     ----------
@@ -140,10 +200,15 @@ def test_zero_shot(
         Dataset name. Allowed values are 'latex_ocr', 'mathwriting', or 'mixed'.
     model_config : str
         Path to JSON with model parameters.
+    num_samples : int | None
+        Number of samples to use for testing. If None, the entire
+        test set is used.
+    random_state : int, optional
+        Random state for shuffling the dataset, by default 42.
     """
-    print(f"Test zero-shot inference on {dataset_name} dataset.")
+    print(f"Test one-shot inference on {dataset_name} dataset.")
     pprint(
-        test_zero_shot_inference(
+        test_one_shot_inference(
             dataset_name, model_config, num_samples, random_state
         )
     )
@@ -197,6 +262,7 @@ def cli():
 cli.add_command(lora)
 # cli.add_command(fine_tune_weights)
 cli.add_command(test_zero_shot)
+cli.add_command(test_one_shot)
 cli.add_command(predict)
 # cli.add_command(run_service)
 

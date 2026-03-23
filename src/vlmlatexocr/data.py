@@ -95,3 +95,46 @@ def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
             for key in latex_ocr
         }
     )
+
+
+def get_dataset(
+        dataset_name: str,
+        cache_dir: Path,
+        random_state: int = 42
+    ) -> Dataset:
+    """Check dataset_name and return loaded dataset.
+
+    Parameters
+    ----------
+    dataset_name : str
+        Dataset name. Allowed values are 'latex_ocr',
+        'mathwriting', or 'mixed'.
+    cache_dir : Path
+        The directory where the dataset will be cached locally.
+    random_state : int, optional
+        Seed for shuffling the combined dataset, by default 42.
+
+    Returns
+    -------
+    Dataset
+        Loaded dataset.
+
+    Raises
+    ------
+    ValueError
+        Raise ValueError if dataset_name is not one of the allowed values.
+    """
+    if dataset_name == "latex_ocr":
+        dataset = get_latex_ocr(cache_dir)
+    elif dataset_name == "mathwriting":
+        dataset = get_mathwriting(cache_dir)
+    elif dataset_name == "mixed":
+        dataset = get_mixed_dataset(
+            cache_dir, random_state
+        )
+    else:
+        raise ValueError(
+            "Dataset must be one of 'latex_ocr', 'mathwriting', or 'mixed'."
+        )
+
+    return dataset
