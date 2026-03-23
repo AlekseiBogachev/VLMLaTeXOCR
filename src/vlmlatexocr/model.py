@@ -1,10 +1,18 @@
+from typing import Any
+
+from peft import LoraConfig, get_peft_model
 from tqdm import tqdm
 import torch
-from transformers import AutoProcessor, AutoModelForImageTextToText
+from transformers import (
+    AutoProcessor,
+    AutoModelForImageTextToText,
+    TrainingArguments,
+    Trainer
+)
 
 from vlmlatexocr.metrics import calculate_metrics
 from vlmlatexocr.utils import read_config
-from vlmlatexocr.data import get_dataset
+from vlmlatexocr.data import get_dataset, VLMDataCollator
 
 
 def test_zero_shot_inference(
@@ -243,7 +251,52 @@ def run_lora(
     logging_config : str
         Path to JSON with logging parameters.
     """
-    raise NotImplementedError("Comming soon.")
+    model_params = read_config(model_config)
+    lora_params = read_config(lora_config)
+    trainer_params = read_config(trainer_config)
+
+    processor = AutoProcessor.from_pretrained(
+        model_params["model_name"],
+        cache_dir=model_params["model_kwargs"]["cache_dir"],
+    )
+
+    model = AutoModelForImageTextToText.from_pretrained(
+        model_params["model_name"],
+        **model_params["model_kwargs"],
+    )
+
+    lora_config = LoraConfig(**lora_params)
+
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+
+    dataset = get_dataset(
+        model_params["dataset_name"],
+        model_params["datasets_cache_dir"],
+    )
+
+    train_data = dataset["train"]
+    val_data = dataset["validation"]
+
+    collator = VLMDataCollator(processor, model_params["prompt_text"])
+
+    training_args = TrainingArguments(**trainer_params)
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_data,
+        eval_dataset=val_data,
+        data_collator=collator,
+        compute_metrics=calculate_metrics,
+    )
+
+    trainer.train()
+
+    trainer.save_model(f"{trainer_params["output_dir"]}/final")
+    processor.save_pretrained(f"{trainer_params["output_dir"]}/final")
+
+    return None
 
 
 def run_all_weights_sft(
