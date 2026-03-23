@@ -9,7 +9,7 @@ target-version = "py312"
 
 [lint]
 select = ["D", "E", "F", "I", "W"]
-ignore = ["D301", "E731"]
+ignore = ["D301", "E731", "D400"]
 # fixable = ["ALL"]
 fixable = ["F401", "I001", "W291", "W292", "W293"]
 unfixable = []

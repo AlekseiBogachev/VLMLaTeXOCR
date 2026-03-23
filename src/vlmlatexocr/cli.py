@@ -1,14 +1,15 @@
 from pathlib import Path
+from pprint import pprint
 
 import click
 
-from vlmlatexocr.service import start_sevice
 from vlmlatexocr.model import (
-    run_lora,
     run_all_weights_sft,
-    run_test,
+    run_lora,
     run_predict,
+    test_zero_shot_inference,
 )
+from vlmlatexocr.service import start_sevice
 
 
 @click.command()
@@ -44,11 +45,10 @@ def lora(
     model_config: str,
     lora_config: str,
     trainer_config: str,
-    logging_config:str
+    logging_config: str,
 ):
     """Run SFT with LoRA.\f
 
-    
     Parameters
     ----------
     model_config : str
@@ -85,7 +85,9 @@ def lora(
     show_default=True,
     type=click.Path(exists=True),
 )
-def fine_tune_weights(model_config: str, trainer_config: str, logging_config:str):
+def fine_tune_weights(
+    model_config: str, trainer_config: str, logging_config: str
+):
     """Run SFT with optimization of all weights.\f
 
     Parameters
@@ -101,8 +103,9 @@ def fine_tune_weights(model_config: str, trainer_config: str, logging_config:str
 
 
 @click.command()
-def test():
-    run_test()
+def test_zero_shot(dataset_name: str, model_config:str):
+    print(f"Test zero-shot inference on {dataset_name} dataset.")
+    pprint(test_zero_shot_inference(dataset_name, model_config))
 
 
 @click.command()
@@ -146,12 +149,13 @@ def run_service():
 
 @click.group()
 def cli():
+    """Run CLI."""
     pass
 
 
 cli.add_command(lora)
-cli.add_command(fine_tune_weights)
-cli.add_command(test)
+# cli.add_command(fine_tune_weights)
+cli.add_command(test_zero_shot)
 cli.add_command(predict)
 cli.add_command(run_service)
 
