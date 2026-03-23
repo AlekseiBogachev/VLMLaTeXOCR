@@ -6,5 +6,6 @@
         "dtype": "float16"
     },
     "model_name": "Qwen/Qwen3-VL-2B-Instruct",
-    "prompt_text": "You are an expert in mathematics and LaTeX. Extract the handwritten formula from the image and output it strictly as valid LaTeX code. Do not include any explanations or markdown formatting."
+    "prompt_text": "You are an expert in mathematics and LaTeX. Extract the handwritten formula from the image and output it strictly as valid LaTeX code. Do not include any explanations or markdown formatting.",
+    "datasets_cache_dir": "/home/aleksei/Projects/VLMLaTeXOCR/data"
 }

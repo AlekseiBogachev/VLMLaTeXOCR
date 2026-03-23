@@ -10,6 +10,8 @@ from vlmlatexocr.data import get_latex_ocr, get_mathwriting, get_mixed_dataset
 def test_zero_shot_inference(
     dataset_name: str,
     model_config: str,
+    num_samples: int | None = None,
+    random_state: int = 42,
 ):
     model_params = read_config(model_config)
 
@@ -24,11 +26,13 @@ def test_zero_shot_inference(
     )
 
     if dataset_name == "latex_ocr":
-        dataset = get_latex_ocr(model_params["model_kwargs"]["cache_dir"])
+        dataset = get_latex_ocr(model_params["datasets_cache_dir"])
     elif dataset_name == "mathwriting":
-        dataset = get_mathwriting(model_params["model_kwargs"]["cache_dir"])
+        dataset = get_mathwriting(model_params["datasets_cache_dir"])
     elif dataset_name == "mixed":
-        dataset = get_mixed_dataset(model_params["model_kwargs"]["cache_dir"])
+        dataset = get_mixed_dataset(
+            model_params["datasets_cache_dir"], random_state
+        )
     else:
         raise ValueError(
             "Dataset must be one of 'latex_ocr', 'mathwriting', or 'mixed'."
@@ -38,6 +42,9 @@ def test_zero_shot_inference(
 
     true_values = list()
     pred_values = list()
+
+    if num_samples is not None:
+        dataset = dataset.shuffle(seed=random_state).select(range(num_samples))
 
     for sample in tqdm(dataset):
         image = sample["image"]

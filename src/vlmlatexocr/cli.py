@@ -114,7 +114,24 @@ def fine_tune_weights(
     show_default=True,
     type=click.Path(exists=True),
 )
-def test_zero_shot(dataset_name: str, model_config:str):
+@click.option(
+    "--num-samples",
+    help="Number of samples to use for testing",
+    type=int,
+)
+@click.option(
+    "--random-state",
+    default=42,
+    help="Random state for shuffling the dataset",
+    show_default=True,
+    type=int,
+)
+def test_zero_shot(
+    dataset_name: str,
+    model_config:str,
+    num_samples: int | None = None,
+    random_state: int = 42,
+):
     """Test zero-shot inferens on dataset dataset_name with model_config.\f
 
     Parameters
@@ -125,7 +142,11 @@ def test_zero_shot(dataset_name: str, model_config:str):
         Path to JSON with model parameters.
     """
     print(f"Test zero-shot inference on {dataset_name} dataset.")
-    pprint(test_zero_shot_inference(dataset_name, model_config))
+    pprint(
+        test_zero_shot_inference(
+            dataset_name, model_config, num_samples, random_state
+        )
+    )
 
 
 @click.command()
