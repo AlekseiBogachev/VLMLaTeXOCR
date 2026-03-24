@@ -4,8 +4,13 @@
     "model_kwargs": {
         "cache_dir": "/home/aleksei/Projects/VLMLaTeXOCR/models",
         "device_map": "auto",
-        "dtype": "float16"
+        "dtype": "float16",
+        "attn_implementation": "flash_attention_2"
     },
     "model_name": "Qwen/Qwen3-VL-2B-Instruct",
+    "processor_kwargs": {
+        "min_pixels": 3136,
+        "max_pixels": 1003520
+    },
     "prompt_text": "You are an expert in mathematics and LaTeX. Extract the handwritten formula from the image and output it strictly as valid LaTeX code. Do not include any explanations or markdown formatting."
 }

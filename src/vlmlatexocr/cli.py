@@ -40,6 +40,11 @@ from vlmlatexocr.service import start_sevice
     type=click.Path(exists=True),
 )
 @click.option(
+    "--frac",
+    help="Fraction of the dataset to use for SFT",
+    type=float,
+)
+@click.option(
     "--random-state",
     default=42,
     help="Random state for shuffling the dataset",
@@ -51,6 +56,7 @@ def lora(
     model_config: str,
     lora_config: str,
     trainer_config: str,
+    frac: float | None = None,
     random_state: int = 42,
 ):
     """Run SFT with LoRA.\f
@@ -68,6 +74,12 @@ def lora(
         Path to SON with Trainer parameters.
     logging_config : str
         Path to JSON with logging parameters.
+    frac : float | None, optional
+        Fraction of the dataset to use for SFT. If None, the entire
+        dataset is used. Default None.
+    random_state : int, optional
+        Random state for shuffling the dataset and selecting the reference
+        example, by default 42.
     """
     run_lora(
         dataset_name,

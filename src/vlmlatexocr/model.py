@@ -1,3 +1,4 @@
+import json
 
 import torch
 from peft import LoraConfig, get_peft_model
@@ -11,7 +12,6 @@ from transformers import (
 
 from vlmlatexocr.data import VLMDataCollator, get_dataset
 from vlmlatexocr.metrics import calculate_metrics
-from vlmlatexocr.utils import read_config
 
 
 def read_config(config_path: str) -> dict:
@@ -61,6 +61,7 @@ def test_zero_shot_inference(
     processor = AutoProcessor.from_pretrained(
         model_params["model_name"],
         cache_dir=model_params["model_kwargs"]["cache_dir"],
+        **model_params["processor_kwargs"],
     )
 
     model = AutoModelForImageTextToText.from_pretrained(
@@ -150,7 +151,7 @@ def test_one_shot_inference(
         Path to the JSON configuration file containing model parameters.
     num_samples : int | None, optional
         The number of samples to test. If None, the entire test set is used,
-          by default None.
+        by default None.
     random_state : int, optional
         The random seed for shuffling the dataset and selecting the reference
         example, by default 42.
@@ -257,6 +258,7 @@ def run_lora(
     model_config: str,
     lora_config: str,
     trainer_config: str,
+    frac: float | None = None,
     random_state: int = 42,
 ):
     """Run SFT with LoRA.
@@ -271,6 +273,9 @@ def run_lora(
         Path to JSON with LoRA parameters.
     trainer_config : str
         Path to SON with Trainer parameters.
+    frac : float | None, optional
+        The fraction of the dataset to use for SFT. If None, the entire
+        dataset is used. Default None.
     random_state : int, optional
         The random seed for shuffling the dataset and selecting the reference
         example, by default 42.
@@ -302,6 +307,18 @@ def run_lora(
 
     train_data = dataset["train"]
     val_data = dataset["validation"]
+    test_data = dataset["test"]
+
+    if frac is not None:
+        train_data = train_data.shuffle(seed=random_state).select(
+            range(int(len(train_data) * frac))
+        )
+        val_data = val_data.shuffle(seed=random_state).select(
+            range(int(len(val_data) * frac))
+        )
+        test_data = test_data.shuffle(seed=random_state).select(
+            range(int(len(test_data) * frac))
+        )
 
     collator = VLMDataCollator(processor, model_params["prompt_text"])
 
