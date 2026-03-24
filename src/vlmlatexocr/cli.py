@@ -86,6 +86,7 @@ def lora(
         model_config,
         lora_config,
         trainer_config,
+        frac,
         random_state,
     )
 
