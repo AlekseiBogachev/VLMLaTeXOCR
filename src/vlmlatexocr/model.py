@@ -320,6 +320,10 @@ def run_lora(
             range(int(len(test_data) * frac))
         )
 
+    print("Train dataset contains", len(train_data), "samples.")
+    print("Validation dataset contains", len(val_data), "samples.")
+    print("Test dataset contains", len(test_data), "samples.")
+
     collator = VLMDataCollator(processor, model_params["prompt_text"])
 
     training_args = TrainingArguments(**trainer_params)
