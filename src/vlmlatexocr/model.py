@@ -338,6 +338,7 @@ def run_lora(
     )
 
     trainer.train()
+    trainer.evaluate(test_data)
 
     trainer.save_model(f"{trainer_params['output_dir']}/final")
     processor.save_pretrained(f"{trainer_params['output_dir']}/final")
