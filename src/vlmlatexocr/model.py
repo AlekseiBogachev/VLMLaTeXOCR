@@ -6,6 +6,7 @@ from tqdm import tqdm
 from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
+    BitsAndBytesConfig,
     Trainer,
     TrainingArguments,
 )
@@ -64,8 +65,11 @@ def test_zero_shot_inference(
         **model_params["processor_kwargs"],
     )
 
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
     model = AutoModelForImageTextToText.from_pretrained(
         model_params["model_name"],
+        quantization_config=quantization_config,
         **model_params["model_kwargs"],
     )
 
@@ -168,8 +172,11 @@ def test_one_shot_inference(
         cache_dir=model_params["model_kwargs"]["cache_dir"],
     )
 
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
     model = AutoModelForImageTextToText.from_pretrained(
         model_params["model_name"],
+        quantization_config=quantization_config,
         **model_params["model_kwargs"],
     )
 
@@ -289,8 +296,11 @@ def run_lora(
         cache_dir=model_params["model_kwargs"]["cache_dir"],
     )
 
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
     model = AutoModelForImageTextToText.from_pretrained(
         model_params["model_name"],
+        quantization_config=quantization_config,
         **model_params["model_kwargs"],
     )
 
