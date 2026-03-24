@@ -1,6 +1,6 @@
 {
     "datasets_cache_dir": "/home/aleksei/Projects/VLMLaTeXOCR/data",
-    "max_new_tokens": 512,
+    "max_new_tokens": 256,
     "model_kwargs": {
         "cache_dir": "/home/aleksei/Projects/VLMLaTeXOCR/models",
         "device_map": "auto",
