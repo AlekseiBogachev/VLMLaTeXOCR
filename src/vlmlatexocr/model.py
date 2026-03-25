@@ -170,6 +170,7 @@ def test_one_shot_inference(
     processor = AutoProcessor.from_pretrained(
         model_params["model_name"],
         cache_dir=model_params["model_kwargs"]["cache_dir"],
+        **model_params["processor_kwargs"],
     )
 
     quantization_config = BitsAndBytesConfig(load_in_8bit=True)
@@ -294,6 +295,7 @@ def run_lora(
     processor = AutoProcessor.from_pretrained(
         model_params["model_name"],
         cache_dir=model_params["model_kwargs"]["cache_dir"],
+        **model_params["processor_kwargs"],
     )
 
     quantization_config = BitsAndBytesConfig(load_in_8bit=True)

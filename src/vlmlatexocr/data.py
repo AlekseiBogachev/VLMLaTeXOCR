@@ -235,11 +235,19 @@ class VLMDataCollator:
 
         labels = batch["input_ids"].clone()
 
-        for i, text in enumerate(texts):
-            response_text = samples[i]["text"]
-            response_start_char = text.rfind(response_text)
-            token_start_index = batch.char_to_token(i, response_start_char)
-            labels[i, :token_start_index] = -100
+        # Convert prompt ending (separator) to tokens
+        separator = "<|im_start|>assistant\n"
+        separator_ids = self.processor.tokenizer(
+            separator, add_special_tokens=False
+        )["input_ids"]
+        
+        # Find separator's tokens and mask prompt
+        separator_len = len(separator_ids)
+        for seq in batch:
+            for i in range(len(seq)):
+                if torch.equal(seq[i:i+separator_len], torch.tensor(separator_ids)):
+                    seq[:i] = -100
+                    break
 
         labels[labels == self.processor.tokenizer.pad_token_id] = -100
 

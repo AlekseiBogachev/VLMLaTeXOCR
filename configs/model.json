@@ -10,7 +10,8 @@
     "model_name": "Qwen/Qwen3-VL-2B-Instruct",
     "processor_kwargs": {
         "min_pixels": 3136,
-        "max_pixels": 784000
+        "max_pixels": 784000,
+        "use_fast": true
     },
     "prompt_text": "You are an expert in mathematics and LaTeX. Extract the handwritten formula from the image and output it strictly as valid LaTeX code. Do not include any explanations or markdown formatting."
 }
