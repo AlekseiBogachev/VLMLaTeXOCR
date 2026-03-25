@@ -320,15 +320,9 @@ def run_lora(
     test_data = dataset["test"]
 
     if frac is not None:
-        train_data = train_data.shuffle(seed=random_state).select(
-            range(int(len(train_data) * frac))
-        )
-        val_data = val_data.shuffle(seed=random_state).select(
-            range(int(len(val_data) * frac))
-        )
-        test_data = test_data.shuffle(seed=random_state).select(
-            range(int(len(test_data) * frac))
-        )
+        for split in [train_data, val_data, test_data]:
+            split = split.shuffle(seed=random_state)
+            split.select(range(int(len(split) * frac)))
 
     print("Train dataset contains", len(train_data), "samples.")
     print("Validation dataset contains", len(val_data), "samples.")
