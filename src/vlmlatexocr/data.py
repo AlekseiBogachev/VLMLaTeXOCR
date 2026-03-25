@@ -49,7 +49,7 @@ def get_mathwriting(cache_dir: Path) -> Dataset:
         A Hugging Face Dataset object containing the preprocessed
         MathWriting data.
     """
-    return (
+    math_writing = (
         load_dataset(
             "deepcopy/MathWriting-human",
             "default",
@@ -58,6 +58,18 @@ def get_mathwriting(cache_dir: Path) -> Dataset:
         .rename_column("latex", "text")
         .select_columns(["image", "text"])
     )
+
+    mathwriting = DatasetDict(
+        {
+            "train": mathwriting["train"],
+            "validation": mathwriting["val"],
+            "test": mathwriting["test"],
+        }
+    )
+
+    return math_writing
+
+
 
 
 def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
@@ -81,13 +93,6 @@ def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
     """
     latex_ocr = get_latex_ocr(cache_dir)
     mathwriting = get_mathwriting(cache_dir)
-    mathwriting = DatasetDict(
-        {
-            "train": mathwriting["train"],
-            "validation": mathwriting["val"],
-            "test": mathwriting["test"],
-        }
-    )
 
     return DatasetDict(
         {
