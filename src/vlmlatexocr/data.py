@@ -243,9 +243,9 @@ class VLMDataCollator:
         
         # Find separator's tokens and mask prompt
         separator_len = len(separator_ids)
-        for seq in batch:
-            for i in range(len(seq)):
-                if torch.equal(seq[i:i+separator_len], torch.tensor(separator_ids)):
+        for seq in batch["input_ids"]:
+            for i in range(len(seq), separator_len, -1):
+                if torch.equal(seq[i-separator_len:i], torch.tensor(separator_ids)):
                     seq[:i] = -100
                     break
 
