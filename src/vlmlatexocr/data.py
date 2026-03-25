@@ -240,13 +240,15 @@ class VLMDataCollator:
         separator_ids = self.processor.tokenizer(
             separator, add_special_tokens=False
         )["input_ids"]
-        
+
         # Find separator's tokens and mask prompt
         separator_len = len(separator_ids)
         for seq in batch["input_ids"]:
             for i in range(len(seq), separator_len, -1):
-                if torch.equal(seq[i-separator_len:i], torch.tensor(separator_ids)):
-                    seq[:i] = -100
+                if torch.equal(
+                    seq[i - separator_len : i], torch.tensor(separator_ids)
+                ):
+                    labels[:i] = -100
                     break
 
         labels[labels == self.processor.tokenizer.pad_token_id] = -100

@@ -1,6 +1,6 @@
 {
   "output_dir": "/home/aleksei/Projects/VLMLaTeXOCR/models/qwen",
-  "per_device_train_batch_size": 4,
+  "per_device_train_batch_size": 1,
   "num_train_epochs": 100,
   "max_steps": -1,
   "learning_rate": 0.0002,
@@ -50,7 +50,7 @@
   "eval_strategy": "epoch",
   "eval_steps": null,
   "eval_delay": 0,
-  "per_device_eval_batch_size": 4,
+  "per_device_eval_batch_size": 1,
   "prediction_loss_only": false,
   "eval_on_start": false,
   "eval_do_concat_batches": true,
