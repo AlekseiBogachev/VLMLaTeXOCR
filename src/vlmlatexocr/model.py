@@ -1,3 +1,4 @@
+import json
 
 import torch
 from peft import LoraConfig, get_peft_model
@@ -5,13 +6,30 @@ from tqdm import tqdm
 from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
+    BitsAndBytesConfig,
     Trainer,
     TrainingArguments,
 )
 
 from vlmlatexocr.data import VLMDataCollator, get_dataset
 from vlmlatexocr.metrics import calculate_metrics
-from vlmlatexocr.utils import read_config
+
+
+def read_config(config_path: str) -> dict:
+    """Read configuration from a JSON file.
+
+    Parameters
+    ----------
+    config_path : str
+        Path to the JSON configuration file.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the configuration data.
+    """
+    with open(config_path, "r") as f:
+        return json.load(f)
 
 
 def test_zero_shot_inference(
@@ -44,10 +62,14 @@ def test_zero_shot_inference(
     processor = AutoProcessor.from_pretrained(
         model_params["model_name"],
         cache_dir=model_params["model_kwargs"]["cache_dir"],
+        **model_params["processor_kwargs"],
     )
+
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
     model = AutoModelForImageTextToText.from_pretrained(
         model_params["model_name"],
+        quantization_config=quantization_config,
         **model_params["model_kwargs"],
     )
 
@@ -133,7 +155,7 @@ def test_one_shot_inference(
         Path to the JSON configuration file containing model parameters.
     num_samples : int | None, optional
         The number of samples to test. If None, the entire test set is used,
-          by default None.
+        by default None.
     random_state : int, optional
         The random seed for shuffling the dataset and selecting the reference
         example, by default 42.
@@ -148,10 +170,14 @@ def test_one_shot_inference(
     processor = AutoProcessor.from_pretrained(
         model_params["model_name"],
         cache_dir=model_params["model_kwargs"]["cache_dir"],
+        **model_params["processor_kwargs"],
     )
+
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
     model = AutoModelForImageTextToText.from_pretrained(
         model_params["model_name"],
+        quantization_config=quantization_config,
         **model_params["model_kwargs"],
     )
 
@@ -240,6 +266,7 @@ def run_lora(
     model_config: str,
     lora_config: str,
     trainer_config: str,
+    frac: float | None = None,
     random_state: int = 42,
 ):
     """Run SFT with LoRA.
@@ -254,6 +281,9 @@ def run_lora(
         Path to JSON with LoRA parameters.
     trainer_config : str
         Path to SON with Trainer parameters.
+    frac : float | None, optional
+        The fraction of the dataset to use for SFT. If None, the entire
+        dataset is used. Default None.
     random_state : int, optional
         The random seed for shuffling the dataset and selecting the reference
         example, by default 42.
@@ -265,10 +295,14 @@ def run_lora(
     processor = AutoProcessor.from_pretrained(
         model_params["model_name"],
         cache_dir=model_params["model_kwargs"]["cache_dir"],
+        **model_params["processor_kwargs"],
     )
+
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
     model = AutoModelForImageTextToText.from_pretrained(
         model_params["model_name"],
+        quantization_config=quantization_config,
         **model_params["model_kwargs"],
     )
 
@@ -285,6 +319,16 @@ def run_lora(
 
     train_data = dataset["train"]
     val_data = dataset["validation"]
+    test_data = dataset["test"]
+
+    if frac is not None:
+        for split in [train_data, val_data, test_data]:
+            split = split.shuffle(seed=random_state)
+            split.select(range(int(len(split) * frac)))
+
+    print("Train dataset contains", len(train_data), "samples.")
+    print("Validation dataset contains", len(val_data), "samples.")
+    print("Test dataset contains", len(test_data), "samples.")
 
     collator = VLMDataCollator(processor, model_params["prompt_text"])
 
@@ -300,6 +344,7 @@ def run_lora(
     )
 
     trainer.train()
+    trainer.evaluate(test_data)
 
     trainer.save_model(f"{trainer_params['output_dir']}/final")
     processor.save_pretrained(f"{trainer_params['output_dir']}/final")

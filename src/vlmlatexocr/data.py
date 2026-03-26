@@ -5,6 +5,45 @@ import torch
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 
 
+def sample_val_test(dataset: Dataset, val_frac=0.1, test_frac=0.1, seed=42):
+    """Split a dataset into train, validation, and test sets.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        The dataset to split.
+    val_frac : float, optional
+        The fraction of the dataset to include in the validation split,
+        by default 0.1.
+    test_frac : float, optional
+        The fraction of the dataset to include in the test split,
+        by default 0.1.
+    seed : int, optional
+        Random seed for shuffling the dataset before splitting,
+        by default 42.
+
+    Returns
+    -------
+    tuple[Dataset, Dataset, Dataset]
+        A tuple containing the train, validation, and test datasets.
+    """
+    data = dataset.shuffle(seed=seed)
+    val_size = int(len(data) * val_frac)
+    test_size = int(len(data) * test_frac)
+    train_size = len(data) - val_size - test_size
+
+    train_boundaries = (0, train_size)
+    val_boundaries = (train_size, train_size + val_size)
+    test_start = train_size + val_size
+    test_boundaries = (test_start, test_start + test_size)
+
+    return (
+        data.select(range(*train_boundaries)),
+        data.select(range(*val_boundaries)),
+        data.select(range(*test_boundaries)),
+    )
+
+
 def get_latex_ocr(cache_dir: Path) -> Dataset:
     """Load linxy/LaTeX_OCR dataset.
 
@@ -22,10 +61,20 @@ def get_latex_ocr(cache_dir: Path) -> Dataset:
     Dataset
         A Hugging Face Dataset object containing the LaTeX OCR data.
     """
-    return load_dataset(
+    data = load_dataset(
         "linxy/LaTeX_OCR",
-        "full",
+        "default",
+        split="train",
         cache_dir=cache_dir,
+    )
+    train, val, test = sample_val_test(data)
+
+    return DatasetDict(
+        {
+            "train": train,
+            "validation": val,
+            "test": test,
+        }
     )
 
 
@@ -49,14 +98,24 @@ def get_mathwriting(cache_dir: Path) -> Dataset:
         A Hugging Face Dataset object containing the preprocessed
         MathWriting data.
     """
-    return (
+    data = (
         load_dataset(
             "deepcopy/MathWriting-human",
-            "default",
+            split="train",
             cache_dir=cache_dir,
         )
         .rename_column("latex", "text")
         .select_columns(["image", "text"])
+    )
+
+    train, val, test = sample_val_test(data)
+
+    return DatasetDict(
+        {
+            "train": train,
+            "validation": val,
+            "test": test,
+        }
     )
 
 
@@ -81,13 +140,6 @@ def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
     """
     latex_ocr = get_latex_ocr(cache_dir)
     mathwriting = get_mathwriting(cache_dir)
-    mathwriting = DatasetDict(
-        {
-            "train": mathwriting["train"],
-            "validation": mathwriting["val"],
-            "test": mathwriting["test"],
-        }
-    )
 
     return DatasetDict(
         {
@@ -182,9 +234,24 @@ class VLMDataCollator:
         )
 
         labels = batch["input_ids"].clone()
+
+        # Convert prompt ending (separator) to tokens
+        separator = "<|im_start|>assistant\n"
+        separator_ids = self.processor.tokenizer(
+            separator, add_special_tokens=False
+        )["input_ids"]
+
+        # Find separator's tokens and mask prompt
+        separator_len = len(separator_ids)
+        for seq in batch["input_ids"]:
+            for i in range(len(seq), separator_len, -1):
+                if torch.equal(
+                    seq[i - separator_len : i], torch.tensor(separator_ids)
+                ):
+                    labels[:i] = -100
+                    break
+
         labels[labels == self.processor.tokenizer.pad_token_id] = -100
-        # нужно будет заменить на -100 оставшиеся токены, неотносящиеся
-        # к ответу модели в LaTeX.
 
         batch["labels"] = labels
 
