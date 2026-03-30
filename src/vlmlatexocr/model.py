@@ -1,4 +1,5 @@
 import json
+from functools import partial
 
 import torch
 from peft import LoraConfig, get_peft_model
@@ -132,7 +133,7 @@ def test_zero_shot_inference(
             )[0]
         )
 
-    return calculate_metrics(true_values, pred_values)
+    return calculate_metrics([pred_values, true_values])
 
 
 def test_one_shot_inference(
@@ -258,7 +259,7 @@ def test_one_shot_inference(
             )[0]
         )
 
-    return calculate_metrics(true_values, pred_values)
+    return calculate_metrics([pred_values, true_values])
 
 
 def run_lora(
@@ -322,9 +323,15 @@ def run_lora(
     test_data = dataset["test"]
 
     if frac is not None:
-        for split in [train_data, val_data, test_data]:
-            split = split.shuffle(seed=random_state)
-            split.select(range(int(len(split) * frac)))
+        train_data = train_data.shuffle(seed=random_state).select(
+            range(int(len(train_data) * frac))
+        )
+        val_data = val_data.shuffle(seed=random_state).select(
+            range(int(len(val_data) * frac))
+        )
+        test_data = test_data.shuffle(seed=random_state).select(
+            range(int(len(test_data) * frac))
+        )
 
     print("Train dataset contains", len(train_data), "samples.")
     print("Validation dataset contains", len(val_data), "samples.")
@@ -334,13 +341,18 @@ def run_lora(
 
     training_args = TrainingArguments(**trainer_params)
 
+    # An example of implementing partial(calculate_metrics, processor=processor) as a closure:
+    # def compute_metrics_closure(eval_res):
+    #     return calculate_metrics(eval_res, processor=processor)
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_data,
         eval_dataset=val_data,
         data_collator=collator,
-        compute_metrics=calculate_metrics,
+        compute_metrics=partial(calculate_metrics, processor=processor),
+        # compute_metrics=compute_metrics_closure,
     )
 
     trainer.train()
