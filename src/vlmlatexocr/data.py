@@ -248,7 +248,7 @@ class VLMDataCollator:
                 if torch.equal(
                     seq[i - separator_len : i], torch.tensor(separator_ids)
                 ):
-                    labels[:i] = -100
+                    labels[0][:i] = -100
                     break
 
         labels[labels == self.processor.tokenizer.pad_token_id] = -100

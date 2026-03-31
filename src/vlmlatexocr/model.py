@@ -8,8 +8,9 @@ from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
     BitsAndBytesConfig,
-    Trainer,
-    TrainingArguments,
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
+    GenerationConfig,
 )
 
 from vlmlatexocr.data import VLMDataCollator, get_dataset
@@ -306,6 +307,7 @@ def run_lora(
         quantization_config=quantization_config,
         **model_params["model_kwargs"],
     )
+    model.config.pad_token_id = processor.tokenizer.pad_token_id
 
     lora_config = LoraConfig(**lora_params)
 
@@ -339,13 +341,19 @@ def run_lora(
 
     collator = VLMDataCollator(processor, model_params["prompt_text"])
 
-    training_args = TrainingArguments(**trainer_params)
+    gen_config = GenerationConfig.from_model_config(model.config)
+    gen_config.max_new_tokens = model_params["max_new_tokens"]
+    gen_config.max_length = None
+
+    training_args = Seq2SeqTrainingArguments(
+        generation_config=gen_config, **trainer_params
+    )
 
     # An example of implementing partial(calculate_metrics, processor=processor) as a closure:
     # def compute_metrics_closure(eval_res):
     #     return calculate_metrics(eval_res, processor=processor)
 
-    trainer = Trainer(
+    trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
         train_dataset=train_data,
@@ -355,7 +363,10 @@ def run_lora(
         # compute_metrics=compute_metrics_closure,
     )
 
+    print("Start training")
     trainer.train()
+
+    print("Evaluate model on test set")
     trainer.evaluate(test_data)
 
     trainer.save_model(f"{trainer_params['output_dir']}/final")

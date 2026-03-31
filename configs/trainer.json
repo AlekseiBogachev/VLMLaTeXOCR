@@ -38,5 +38,6 @@
   "remove_unused_columns": false,
   "do_eval": true,
   "do_predict": false,
-  "logging_dir": null
+  "logging_dir": null,
+  "predict_with_generate": true
 }

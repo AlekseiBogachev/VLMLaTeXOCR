@@ -63,6 +63,7 @@ def calculate_metrics(eval_res, processor=None) -> dict:
     if processor:
         # replace -100 with the pad_token_id for decoding
         true = np.where(true != -100, true, processor.tokenizer.pad_token_id)
+        pred = np.where(pred != -100, pred, processor.tokenizer.pad_token_id)
 
         pred = processor.batch_decode(
             pred,
