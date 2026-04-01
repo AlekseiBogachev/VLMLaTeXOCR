@@ -1,6 +1,7 @@
 import re
 
 import evaluate
+import numpy as np
 
 wer_metric = evaluate.load("wer")
 cer_metric = evaluate.load("cer")
@@ -55,8 +56,27 @@ def normalize_latex(text: str) -> str:
     return text
 
 
-def calculate_metrics(true: list[str], pred: list[str]) -> dict:
+def calculate_metrics(eval_res, processor=None) -> dict:
     """Normalize LaTeX strings and calculate WER and CER."""
+    pred, true = eval_res
+
+    if processor:
+        # replace -100 with the pad_token_id for decoding
+        true = np.where(true != -100, true, processor.tokenizer.pad_token_id)
+        pred = np.where(pred != -100, pred, processor.tokenizer.pad_token_id)
+
+        pred = processor.batch_decode(
+            pred,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False,
+        )
+
+        true = processor.batch_decode(
+            true,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False,
+        )
+
     return calculate_wer_cer(
         list(map(normalize_latex, true)),
         list(map(normalize_latex, pred)),

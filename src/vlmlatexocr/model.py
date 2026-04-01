@@ -1,4 +1,5 @@
 import json
+from functools import partial
 
 import torch
 from peft import LoraConfig, get_peft_model
@@ -7,8 +8,9 @@ from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
     BitsAndBytesConfig,
-    Trainer,
-    TrainingArguments,
+    GenerationConfig,
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
 )
 
 from vlmlatexocr.data import VLMDataCollator, get_dataset
@@ -132,7 +134,7 @@ def test_zero_shot_inference(
             )[0]
         )
 
-    return calculate_metrics(true_values, pred_values)
+    return calculate_metrics([pred_values, true_values])
 
 
 def test_one_shot_inference(
@@ -258,7 +260,7 @@ def test_one_shot_inference(
             )[0]
         )
 
-    return calculate_metrics(true_values, pred_values)
+    return calculate_metrics([pred_values, true_values])
 
 
 def run_lora(
@@ -305,6 +307,7 @@ def run_lora(
         quantization_config=quantization_config,
         **model_params["model_kwargs"],
     )
+    model.config.pad_token_id = processor.tokenizer.pad_token_id
 
     lora_config = LoraConfig(**lora_params)
 
@@ -322,9 +325,15 @@ def run_lora(
     test_data = dataset["test"]
 
     if frac is not None:
-        for split in [train_data, val_data, test_data]:
-            split = split.shuffle(seed=random_state)
-            split.select(range(int(len(split) * frac)))
+        train_data = train_data.shuffle(seed=random_state).select(
+            range(int(len(train_data) * frac))
+        )
+        val_data = val_data.shuffle(seed=random_state).select(
+            range(int(len(val_data) * frac))
+        )
+        test_data = test_data.shuffle(seed=random_state).select(
+            range(int(len(test_data) * frac))
+        )
 
     print("Train dataset contains", len(train_data), "samples.")
     print("Validation dataset contains", len(val_data), "samples.")
@@ -332,18 +341,32 @@ def run_lora(
 
     collator = VLMDataCollator(processor, model_params["prompt_text"])
 
-    training_args = TrainingArguments(**trainer_params)
+    gen_config = GenerationConfig.from_model_config(model.config)
+    gen_config.max_new_tokens = model_params["max_new_tokens"]
+    gen_config.max_length = None
 
-    trainer = Trainer(
+    training_args = Seq2SeqTrainingArguments(
+        generation_config=gen_config, **trainer_params
+    )
+
+    # An example of implementing partial(calculate_metrics, processor=processor) as a closure:
+    # def compute_metrics_closure(eval_res):
+    #     return calculate_metrics(eval_res, processor=processor)
+
+    trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
         train_dataset=train_data,
         eval_dataset=val_data,
         data_collator=collator,
-        compute_metrics=calculate_metrics,
+        compute_metrics=partial(calculate_metrics, processor=processor),
+        # compute_metrics=compute_metrics_closure,
     )
 
+    print("Start training")
     trainer.train()
+
+    print("Evaluate model on test set")
     trainer.evaluate(test_data)
 
     trainer.save_model(f"{trainer_params['output_dir']}/final")
