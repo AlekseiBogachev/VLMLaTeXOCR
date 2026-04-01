@@ -8,9 +8,9 @@ from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
     BitsAndBytesConfig,
+    GenerationConfig,
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
-    GenerationConfig,
 )
 
 from vlmlatexocr.data import VLMDataCollator, get_dataset

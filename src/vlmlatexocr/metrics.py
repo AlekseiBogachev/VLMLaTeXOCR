@@ -1,7 +1,7 @@
 import re
 
-import numpy as np
 import evaluate
+import numpy as np
 
 wer_metric = evaluate.load("wer")
 cer_metric = evaluate.load("cer")
