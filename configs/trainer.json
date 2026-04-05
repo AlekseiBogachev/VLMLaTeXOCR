@@ -21,7 +21,7 @@
   "logging_strategy": "steps",
   "logging_steps": 100,
   "project": "VLMLaTeXOCR",
-  "trackio_space_id": "trackio",
+  "trackio_space_id": null,
   "eval_strategy": "epoch",
   "per_device_eval_batch_size": 1,
   "eval_on_start": true,

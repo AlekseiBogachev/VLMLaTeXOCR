@@ -3,9 +3,9 @@ from functools import partial
 from pprint import pprint
 
 import torch
+import trackio as wandb
 from peft import LoraConfig, get_peft_model
 from tqdm import tqdm
-import trackio as wandb
 from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
@@ -69,7 +69,7 @@ def test_zero_shot_inference(
             "model_config": model_config,
             "num_samples": num_samples,
             "random_state": random_state,
-        }
+        },
     )
 
     model_params = read_config(model_config)
@@ -146,7 +146,7 @@ def test_zero_shot_inference(
                 clean_up_tokenization_spaces=False,
             )[0]
         )
-    
+
     res = calculate_metrics([pred_values, true_values])
     wandb.log(res)
 
@@ -191,7 +191,7 @@ def test_one_shot_inference(
             "model_config": model_config,
             "num_samples": num_samples,
             "random_state": random_state,
-        }
+        },
     )
 
     model_params = read_config(model_config)
@@ -286,7 +286,7 @@ def test_one_shot_inference(
                 clean_up_tokenization_spaces=False,
             )[0]
         )
-    
+
     res = calculate_metrics([pred_values, true_values])
     wandb.log(res)
 
@@ -322,7 +322,7 @@ def run_lora(
     """
     wandb.init(
         project="VLMLaTeXOCR",
-        name="LoRA_test_run",
+        name="LoRA_test_dataset",
         config={
             "dataset_name": dataset_name,
             "model_config": model_config,
@@ -330,7 +330,7 @@ def run_lora(
             "trainer_config": trainer_config,
             "frac": frac,
             "random_state": random_state,
-        }
+        },
     )
 
     model_params = read_config(model_config)
@@ -414,6 +414,9 @@ def run_lora(
 
     print("Evaluate model on test set")
     test_metrics = trainer.evaluate(test_data)
+    test_metrics = {
+        f"test_{k.strip('eval')}": v for k, v in test_metrics.items()
+    }
     pprint(test_metrics)
     wandb.log(test_metrics)
 
