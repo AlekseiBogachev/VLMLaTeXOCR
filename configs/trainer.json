@@ -39,5 +39,7 @@
   "do_eval": true,
   "do_predict": false,
   "logging_dir": null,
-  "predict_with_generate": true
+  "predict_with_generate": true,
+  "report_to": "trackio",
+  "run_name": "LoRA_test_run"
 }

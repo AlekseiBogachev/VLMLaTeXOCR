@@ -1,9 +1,11 @@
 import json
 from functools import partial
+from pprint import pprint
 
 import torch
 from peft import LoraConfig, get_peft_model
 from tqdm import tqdm
+import trackio as wandb
 from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
@@ -59,6 +61,17 @@ def test_zero_shot_inference(
     dict
         A dictionary containing the calculated metrics (e.g., WER and CER).
     """
+    wandb.init(
+        project="VLMLaTeXOCR",
+        name="zero_shot_test_run",
+        config={
+            "dataset_name": dataset_name,
+            "model_config": model_config,
+            "num_samples": num_samples,
+            "random_state": random_state,
+        }
+    )
+
     model_params = read_config(model_config)
 
     processor = AutoProcessor.from_pretrained(
@@ -133,8 +146,11 @@ def test_zero_shot_inference(
                 clean_up_tokenization_spaces=False,
             )[0]
         )
+    
+    res = calculate_metrics([pred_values, true_values])
+    wandb.log(res)
 
-    return calculate_metrics([pred_values, true_values])
+    return res
 
 
 def test_one_shot_inference(
@@ -167,6 +183,17 @@ def test_one_shot_inference(
     dict
         A dictionary containing the calculated metrics (e.g., WER and CER).
     """
+    wandb.init(
+        project="VLMLaTeXOCR",
+        name="one_shot_test_run",
+        config={
+            "dataset_name": dataset_name,
+            "model_config": model_config,
+            "num_samples": num_samples,
+            "random_state": random_state,
+        }
+    )
+
     model_params = read_config(model_config)
 
     processor = AutoProcessor.from_pretrained(
@@ -259,8 +286,11 @@ def test_one_shot_inference(
                 clean_up_tokenization_spaces=False,
             )[0]
         )
+    
+    res = calculate_metrics([pred_values, true_values])
+    wandb.log(res)
 
-    return calculate_metrics([pred_values, true_values])
+    return res
 
 
 def run_lora(
@@ -290,6 +320,19 @@ def run_lora(
         The random seed for shuffling the dataset and selecting the reference
         example, by default 42.
     """
+    wandb.init(
+        project="VLMLaTeXOCR",
+        name="LoRA_test_run",
+        config={
+            "dataset_name": dataset_name,
+            "model_config": model_config,
+            "lora_config": lora_config,
+            "trainer_config": trainer_config,
+            "frac": frac,
+            "random_state": random_state,
+        }
+    )
+
     model_params = read_config(model_config)
     lora_params = read_config(lora_config)
     trainer_params = read_config(trainer_config)
@@ -366,11 +409,13 @@ def run_lora(
     print("Start training")
     trainer.train()
 
-    print("Evaluate model on test set")
-    trainer.evaluate(test_data)
-
     trainer.save_model(f"{trainer_params['output_dir']}/final")
     processor.save_pretrained(f"{trainer_params['output_dir']}/final")
+
+    print("Evaluate model on test set")
+    test_metrics = trainer.evaluate(test_data)
+    pprint(test_metrics)
+    wandb.log(test_metrics)
 
     return None
 
