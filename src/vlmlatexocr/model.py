@@ -320,19 +320,6 @@ def run_lora(
         The random seed for shuffling the dataset and selecting the reference
         example, by default 42.
     """
-    wandb.init(
-        project="VLMLaTeXOCR",
-        name="LoRA_test_dataset",
-        config={
-            "dataset_name": dataset_name,
-            "model_config": model_config,
-            "lora_config": lora_config,
-            "trainer_config": trainer_config,
-            "frac": frac,
-            "random_state": random_state,
-        },
-    )
-
     model_params = read_config(model_config)
     lora_params = read_config(lora_config)
     trainer_params = read_config(trainer_config)
@@ -415,9 +402,22 @@ def run_lora(
     print("Evaluate model on test set")
     test_metrics = trainer.evaluate(test_data)
     test_metrics = {
-        f"test_{k.strip('eval')}": v for k, v in test_metrics.items()
+        f"test_{k.removeprefix('eval_')}": v for k, v in test_metrics.items()
     }
     pprint(test_metrics)
+
+    wandb.init(
+        project="VLMLaTeXOCR",
+        name="LoRA_test_dataset",
+        config={
+            "dataset_name": dataset_name,
+            "model_config": model_config,
+            "lora_config": lora_config,
+            "trainer_config": trainer_config,
+            "frac": frac,
+            "random_state": random_state,
+        },
+    )
     wandb.log(test_metrics)
 
     return None
