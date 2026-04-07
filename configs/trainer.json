@@ -21,7 +21,7 @@
   "logging_strategy": "steps",
   "logging_steps": 100,
   "project": "VLMLaTeXOCR",
-  "trackio_space_id": "trackio",
+  "trackio_space_id": null,
   "eval_strategy": "epoch",
   "per_device_eval_batch_size": 1,
   "eval_on_start": true,
@@ -39,5 +39,7 @@
   "do_eval": true,
   "do_predict": false,
   "logging_dir": null,
-  "predict_with_generate": true
+  "predict_with_generate": true,
+  "report_to": "trackio",
+  "run_name": "LoRA_test_run"
 }
