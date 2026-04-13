@@ -405,13 +405,13 @@ def run_all_weights_sft(
     raise NotImplementedError("Comming soon.")
 
 
-def run_predict(image_path: str, model_config: str) -> str:
-    """Predict LaTeX for the image image_path using one-shot inference.
+def run_predict(image: str | Image.Image, model_config: str) -> str:
+    """Predict LaTeX for the image using one-shot inference.
 
     Parameters
     ----------
-    image_path : str
-        Path to the image to be recognized.
+    image : str | Image.Image
+        Image to be recognized (path or a PIL Image object).
     model_config : str
         Path to JSON with model parameters.
 
@@ -428,7 +428,8 @@ def run_predict(image_path: str, model_config: str) -> str:
     )
     ref_example = dataset["train"][0]
 
-    image = Image.open(image_path)
+    if isinstance(image, str):
+        image = Image.open(image)
 
     message_template = [
         {

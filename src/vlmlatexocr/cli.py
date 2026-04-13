@@ -269,6 +269,7 @@ def predict(image_path: str, model_config: str):
 
 @click.command()
 def run_service():
+    """Run a Streamlit service for LaTeX OCR."""
     start_sevice()
 
 
@@ -283,7 +284,7 @@ cli.add_command(lora)
 cli.add_command(test_zero_shot)
 cli.add_command(test_one_shot)
 cli.add_command(predict)
-# cli.add_command(run_service)
+cli.add_command(run_service)
 
 
 if __name__ == "__main__":
