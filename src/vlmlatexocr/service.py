@@ -16,7 +16,7 @@ def start_sevice():
     model_config = Path("./configs/model.json")
 
     uploaded_file = st.file_uploader(
-        "Загрузите изображение с формулой", type=["png", "jpg", "jpeg"]
+        "Загрузите изображение с формулой", type=["jpg", "jpeg"]
     )
 
     if uploaded_file is not None:
