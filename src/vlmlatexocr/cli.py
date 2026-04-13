@@ -253,15 +253,8 @@ def test_one_shot(
     show_default=True,
     type=click.Path(exists=True),
 )
-@click.option(
-    "--prediction-config",
-    default=Path("./configs/predict.json"),
-    help="Path to JSON with predictoin parameters",
-    show_default=True,
-    type=click.Path(exists=True),
-)
-def predict(image_path: str, model_config: str, prediction_config: str):
-    """Predict LaTeX for the image image_path.\f
+def predict(image_path: str, model_config: str):
+    """Predict LaTeX for the image image_path using one-shot inference.\f
 
     Parameters
     ----------
@@ -269,10 +262,9 @@ def predict(image_path: str, model_config: str, prediction_config: str):
         Path to JSON with model parameters
     image_path : str
         Path to the image to be recognized.
-    prediction_config : str
-        Path to JSON with predictoin parameters.
     """
-    run_predict(image_path, model_config, prediction_config)
+    pred = run_predict(image_path, model_config)
+    print(f"Predicted LaTeX: {pred}")
 
 
 @click.command()
