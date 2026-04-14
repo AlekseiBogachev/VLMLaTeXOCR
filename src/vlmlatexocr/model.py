@@ -2,6 +2,7 @@ import json
 from functools import partial
 from pprint import pprint
 
+from PIL import Image
 import torch
 import trackio as wandb
 from peft import LoraConfig, get_peft_model
@@ -34,6 +35,28 @@ def read_config(config_path: str) -> dict:
     """
     with open(config_path, "r") as f:
         return json.load(f)
+
+
+def _load_model_and_processor(
+    model_config_path: str,
+) -> tuple[AutoModelForImageTextToText, AutoProcessor, dict]:
+    """Load model, processor and model parameters from a config file."""
+    model_params = read_config(model_config_path)
+
+    processor = AutoProcessor.from_pretrained(
+        model_params["model_name"],
+        cache_dir=model_params["model_kwargs"]["cache_dir"],
+        **model_params["processor_kwargs"],
+    )
+
+    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
+    model = AutoModelForImageTextToText.from_pretrained(
+        model_params["model_name"],
+        quantization_config=quantization_config,
+        **model_params["model_kwargs"],
+    )
+    return model, processor, model_params
 
 
 def test_zero_shot_inference(
@@ -72,22 +95,7 @@ def test_zero_shot_inference(
         },
     )
 
-    model_params = read_config(model_config)
-
-    processor = AutoProcessor.from_pretrained(
-        model_params["model_name"],
-        cache_dir=model_params["model_kwargs"]["cache_dir"],
-        **model_params["processor_kwargs"],
-    )
-
-    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
-
-    model = AutoModelForImageTextToText.from_pretrained(
-        model_params["model_name"],
-        quantization_config=quantization_config,
-        **model_params["model_kwargs"],
-    )
-
+    model, processor, model_params = _load_model_and_processor(model_config)
     dataset = get_dataset(
         dataset_name,
         model_params["datasets_cache_dir"],
@@ -147,7 +155,7 @@ def test_zero_shot_inference(
             )[0]
         )
 
-    res = calculate_metrics([pred_values, true_values])
+    res = calculate_metrics((pred_values, true_values))
     wandb.log(res)
 
     return res
@@ -194,22 +202,7 @@ def test_one_shot_inference(
         },
     )
 
-    model_params = read_config(model_config)
-
-    processor = AutoProcessor.from_pretrained(
-        model_params["model_name"],
-        cache_dir=model_params["model_kwargs"]["cache_dir"],
-        **model_params["processor_kwargs"],
-    )
-
-    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
-
-    model = AutoModelForImageTextToText.from_pretrained(
-        model_params["model_name"],
-        quantization_config=quantization_config,
-        **model_params["model_kwargs"],
-    )
-
+    model, processor, model_params = _load_model_and_processor(model_config)
     dataset = get_dataset(
         dataset_name,
         model_params["datasets_cache_dir"],
@@ -287,7 +280,7 @@ def test_one_shot_inference(
             )[0]
         )
 
-    res = calculate_metrics([pred_values, true_values])
+    res = calculate_metrics((pred_values, true_values))
     wandb.log(res)
 
     return res
@@ -320,23 +313,10 @@ def run_lora(
         The random seed for shuffling the dataset and selecting the reference
         example, by default 42.
     """
-    model_params = read_config(model_config)
     lora_params = read_config(lora_config)
     trainer_params = read_config(trainer_config)
 
-    processor = AutoProcessor.from_pretrained(
-        model_params["model_name"],
-        cache_dir=model_params["model_kwargs"]["cache_dir"],
-        **model_params["processor_kwargs"],
-    )
-
-    quantization_config = BitsAndBytesConfig(load_in_8bit=True)
-
-    model = AutoModelForImageTextToText.from_pretrained(
-        model_params["model_name"],
-        quantization_config=quantization_config,
-        **model_params["model_kwargs"],
-    )
+    model, processor, model_params = _load_model_and_processor(model_config)
     model.config.pad_token_id = processor.tokenizer.pad_token_id
 
     lora_config = LoraConfig(**lora_params)
@@ -406,22 +386,7 @@ def run_lora(
     }
     pprint(test_metrics)
 
-    wandb.init(
-        project="VLMLaTeXOCR",
-        name="LoRA_test_dataset",
-        config={
-            "dataset_name": dataset_name,
-            "model_config": model_config,
-            "lora_config": lora_config,
-            "trainer_config": trainer_config,
-            "frac": frac,
-            "random_state": random_state,
-        },
-    )
-    wandb.log(test_metrics)
-
-    return None
-
+    trainer.log(test_metrics)
 
 def run_all_weights_sft(
     model_config: str, trainer_config: str, logging_config: str
@@ -440,21 +405,85 @@ def run_all_weights_sft(
     raise NotImplementedError("Comming soon.")
 
 
-def run_test():
-    """Test model."""
-    raise NotImplementedError("Comming soon.")
-
-
-def run_predict(image_path: str, model_config: str, prediction_config: str):
-    """Predict LaTeX for the image image_path.
+def run_predict(image: str | Image.Image, model_config: str) -> str:
+    """Predict LaTeX for the image using one-shot inference.
 
     Parameters
     ----------
-    image_path : str
-        Path to the image to be recognized.
+    image : str | Image.Image
+        Image to be recognized (path or a PIL Image object).
     model_config : str
         Path to JSON with model parameters.
-    prediction_config : str
-        Path to JSON with predictoin parameters.
+
+    Returns
+    -------
+    str
+        The predicted LaTeX string.
     """
-    raise NotImplementedError("Comming soon.")
+    model, processor, model_params = _load_model_and_processor(model_config)
+
+    dataset = get_dataset(
+        "mathwriting",
+        model_params["datasets_cache_dir"],
+    )
+    ref_example = dataset["train"][0]
+
+    if isinstance(image, str):
+        image = Image.open(image)
+
+    message_template = [
+        {
+            "role": "system",
+            "content": [
+                {"type": "text", "text": model_params["prompt_text"]}
+            ],
+        },
+        {
+            "role": "user",
+            "content": [
+                {"type": "image"},
+                {"type": "text", "text": "Convert this image to LaTeX:"},
+            ],
+        },
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": ref_example["text"]}],
+        },
+        {
+            "role": "user",
+            "content": [
+                {"type": "image"},
+                {"type": "text", "text": "Convert this image to LaTeX:"},
+            ],
+        },
+    ]
+
+    text_prompt = processor.apply_chat_template(
+        message_template,
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+    inputs = processor(
+        text=[text_prompt],
+        images=[ref_example["image"], image],
+        padding=True,
+        return_tensors="pt",
+    )
+
+    prompt_len = inputs["input_ids"].shape[1]
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+    with torch.no_grad():
+        output_ids = model.generate(
+            **inputs,
+            max_new_tokens=model_params["max_new_tokens"],
+        )
+
+    generated_tokens = output_ids[:, prompt_len:]
+
+    return processor.batch_decode(
+        generated_tokens,
+        skip_special_tokens=True,
+        clean_up_tokenization_spaces=False,
+    )[0]

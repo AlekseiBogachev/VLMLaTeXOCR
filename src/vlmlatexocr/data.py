@@ -44,7 +44,7 @@ def sample_val_test(dataset: Dataset, val_frac=0.1, test_frac=0.1, seed=42):
     )
 
 
-def get_latex_ocr(cache_dir: Path) -> Dataset:
+def get_latex_ocr(cache_dir: Path) -> DatasetDict:
     """Load linxy/LaTeX_OCR dataset.
 
     This function loads the linxy/LaTeX_OCR dataset, which contains
@@ -58,7 +58,7 @@ def get_latex_ocr(cache_dir: Path) -> Dataset:
 
     Returns
     -------
-    Dataset
+    DatasetDict
         A Hugging Face Dataset object containing the LaTeX OCR data.
     """
     data = load_dataset(
@@ -78,7 +78,7 @@ def get_latex_ocr(cache_dir: Path) -> Dataset:
     )
 
 
-def get_mathwriting(cache_dir: Path) -> Dataset:
+def get_mathwriting(cache_dir: Path) -> DatasetDict:
     """Load deepcopy/MathWriting-human dataset.
 
     This function loads the deepcopy/MathWriting-human dataset, which
@@ -94,7 +94,7 @@ def get_mathwriting(cache_dir: Path) -> Dataset:
 
     Returns
     -------
-    Dataset
+    DatasetDict
         A Hugging Face Dataset object containing the preprocessed
         MathWriting data.
     """
@@ -119,7 +119,7 @@ def get_mathwriting(cache_dir: Path) -> Dataset:
     )
 
 
-def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
+def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> DatasetDict:
     """Create a dataset by concatenating LaTeX OCR and MathWriting datasets.
 
     This function combines the linxy/LaTeX_OCR and deepcopy/MathWriting-human
@@ -135,7 +135,7 @@ def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
 
     Returns
     -------
-    Dataset
+    DatasetDict
         A Hugging Face Dataset object containing the mixed and shuffled data.
     """
     latex_ocr = get_latex_ocr(cache_dir)
@@ -153,7 +153,7 @@ def get_mixed_dataset(cache_dir: Path, random_state: int = 42) -> Dataset:
 
 def get_dataset(
     dataset_name: str, cache_dir: Path, random_state: int = 42
-) -> Dataset:
+) -> DatasetDict:
     """Check dataset_name and return loaded dataset.
 
     Parameters
@@ -168,7 +168,7 @@ def get_dataset(
 
     Returns
     -------
-    Dataset
+    DatasetDict
         Loaded dataset.
 
     Raises
@@ -240,15 +240,16 @@ class VLMDataCollator:
         separator_ids = self.processor.tokenizer(
             separator, add_special_tokens=False
         )["input_ids"]
+        separator_ids_tensor = torch.tensor(separator_ids)
 
         # Find separator's tokens and mask prompt
         separator_len = len(separator_ids)
-        for seq in batch["input_ids"]:
-            for i in range(len(seq), separator_len, -1):
+        for idx, seq in enumerate(batch["input_ids"]):
+            for i in range(len(seq), separator_len - 1, -1):
                 if torch.equal(
-                    seq[i - separator_len : i], torch.tensor(separator_ids)
+                    seq[i - separator_len : i], separator_ids_tensor
                 ):
-                    labels[0][:i] = -100
+                    labels[idx][:i] = -100
                     break
 
         labels[labels == self.processor.tokenizer.pad_token_id] = -100
