@@ -11,7 +11,7 @@ from vlmlatexocr.model import run_predict
 def start_sevice():
     """Start a Streamlit service for LaTeX OCR."""
     st.set_page_config(page_title="VLMLaTeXOCR", layout="wide")
-    st.title("Распознавание LaTeX формул")
+    st.title("Распознавание формул")
 
     model_config = Path("./configs/model.json")
 
